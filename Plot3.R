@@ -4,38 +4,38 @@
 #loads ggplot2
 library(ggplot2)
 
+#loads dplyr
+library(dplyr)
+
 #downloads the data file from UC Irvine
-#download.file("https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip","pc.zip")
+download.file("https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip","pc.zip")
 
 #unzips the file
-#unzip("pc.zip")
+unzip("pc.zip")
 
 ## This first line will likely take a few seconds. Be patient!
-#NEI <- readRDS("summarySCC_PM25.rds")
-#SCC <- readRDS("Source_Classification_Code.rds")
+NEI <- readRDS("summarySCC_PM25.rds")
+SCC <- readRDS("Source_Classification_Code.rds")
 
-#sets the output file requirements
-#png(file="plot3.png",width=480,height=480,units="px")
+NEIsum <- tbl_df(NEI)
 
 #subset the data to Baltimore City
-totalP25byBalt <- subset(NEI,NEI$fips == "24510")
+totalP25byBalt <- filter(NEIsum, fips == "24510")
+totalP25byBalt <- group_by(totalP25byBalt,year,type)
 
-#subsets the data by type
-P25point <- subset(totalP25byBalt,totalP25byBalt$type == "POINT")
-P25nonpoint <- subset(totalP25byBalt,totalP25byBalt$type == "NONPOINT")
-P25onroad <- subset(totalP25byBalt,totalP25byBalt$type == "ON-ROAD")
-P25nonroad <- subset(totalP25byBalt,totalP25byBalt$type == "NON-ROAD")
+#summarizes by the data required
+summaryP25byBalt <- summarize(totalP25byBalt,sumperyear=sum(Emissions))
 
-#extract data by type
-totalP25point <- tapply(P25point$Emissions,P25point$year, sum)
-totalP25nonpoint <- tapply(P25nonpoint$Emissions,P25nonpoint$year, sum)
-totalP25onroad <- tapply(P25onroad$Emissions,P25onroad$year, sum)
-totalP25nonroad <- tapply(P25nonroad$Emissions,P25nonroad$year, sum)
-
-totalP25 <- rbind("POINT"=totalP25point,"NONPOINT"=totalP25nonpoint,"ON-ROAD"=totalP25onroad,"NON-ROAD"=totalP25nonroad)
+#sets the output file requirements
+png(file="plot3.png",width=480,height=480,units="px")
 
 #plots the data
-qplot(names(totalP25),totalP25,color=type, geom="line")
+p <- qplot(year,sumperyear,data=summaryP25byBalt,color=type, geom="line") +
+  ggtitle("Emissions in Baltimore City by Source Type and Year") +
+  xlab("Year") +
+  ylab("Total PM2.5 Emissions")
+
+print(p)
 
 #closes the file
-#dev.off()
+dev.off()
